@@ -187,7 +187,7 @@ td.rowlbl{font-weight:600;min-width:160px}
       <div class="brand-org">Achieve Brown County</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <div class="eyebrow">Start with a school or district</div>
+      <div class="eyebrow">Explore a K–3 school or district</div>
       <div class="picker" id="picker-side"></div>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -195,7 +195,7 @@ td.rowlbl{font-weight:600;min-width:160px}
       <ul>
         <li>Chronic absence in kindergarten through grade 3</li>
         <li>Reading outcomes for public-school third graders</li>
-        <li>Any public school or district in Brown County</li>
+        <li>Schools with third-grade reading or K–3 attendance data, and Brown County districts</li>
         <li>2024–25 school year (2023–24 for year-over-year comparisons)</li>
       </ul>
     </div>
@@ -248,6 +248,8 @@ var WORM="data:image/webp;base64,UklGRuoTAABXRUJQVlA4WAoAAAAQAAAAXwAAXwAAQUxQSMM
 var D=JSON.parse(document.getElementById('abc-data').textContent);
 var U=D.units, YEARS=D.years, LATEST=YEARS[YEARS.length-1];
 var DIST=Object.keys(U).filter(function(k){return U[k].t==='district'});
+var SCHOOL_READING=new Set(Object.keys(U).filter(function(k){return U[k].t==='school'&&YEARS.some(function(y){return Object.prototype.hasOwnProperty.call(D.R,'R|'+y+'|'+k+'|all')})}));
+var SCHOOL_ATTENDANCE=new Set(Object.keys(U).filter(function(k){return U[k].t==='school'&&YEARS.some(function(y){return ['KG','1','2','3'].some(function(g){return Object.prototype.hasOwnProperty.call(D.A,'A|'+y+'|'+k+'|grade:'+g)})})}));
 
 /* ---------- formatting ---------- */
 function pct(v){return Math.round(1000*v[0]/v[1])/10}
@@ -528,7 +530,7 @@ function renderAnswer(ans){
     card.appendChild(mn);
   }
   var ft=el('div','card-f');
-  ft.appendChild(el('div',null,'Brown County public school districts only. Does not include private, choice, or homeschooled students, or students who take the DLM instead of the Forward Exam.'));
+  ft.appendChild(el('div',null,'Scope: Countywide third-grade reading totals include eight public school districts and a non-district public charter school. Reading subgroups and K–3 attendance totals are eight-district aggregates. Individual school/district figures use their own reported populations. No individual student records.'));
   var src=el('div');src.appendChild(document.createTextNode('Source: Wisconsin DPI certified files, '+Object.keys(years).sort().join(' and ')+' (Forward Exam ELA; chronic absenteeism, ESSA/State measure), prepared by Achieve Brown County. '));
   var a=el('a',null,'Check in WISEdash');a.href='https://dpi.wi.gov/wisedash';a.target='_blank';a.rel='noopener';a.style.fontWeight='600';src.appendChild(a);ft.appendChild(src);
   card.appendChild(ft);
@@ -548,12 +550,12 @@ var TOPICS=[
   ['📅 Attendance',function(n){return 'Attendance by grade at '+n+' in 2024-25?'}]
 ];
 function placeOptions(sel){
-  var o=el('option',null,'Choose a school or district');o.value='';sel.appendChild(o);
+  var o=el('option',null,'Choose a K–3 school or district');o.value='';sel.appendChild(o);
   var c=el('option',null,'All of Brown County');c.value='county';sel.appendChild(c);
   DIST.slice().sort(function(a,b){return unitName(a).localeCompare(unitName(b))}).forEach(function(d){
     var g=document.createElement('optgroup');g.label=unitName(d);
     var w=el('option',null,unitName(d)+' (whole district)');w.value=d;g.appendChild(w);
-    Object.keys(U).filter(function(k){return U[k].t==='school'&&U[k].d===d}).sort(function(a,b){return unitName(a).localeCompare(unitName(b))}).forEach(function(k){var x=el('option',null,unitName(k));x.value=k;g.appendChild(x)});
+    Object.keys(U).filter(function(k){return U[k].t==='school'&&U[k].d===d&&(SCHOOL_READING.has(k)||SCHOOL_ATTENDANCE.has(k))}).sort(function(a,b){return unitName(a).localeCompare(unitName(b))}).forEach(function(k){var x=el('option',null,unitName(k));x.value=k;g.appendChild(x)});
     sel.appendChild(g);
   });
 }
@@ -563,9 +565,9 @@ function buildPicker(host,id){
   var sel=el('select');sel.id=id;placeOptions(sel);host.appendChild(sel);
   var box=el('div','pbtns');
   var btns=TOPICS.map(function(t){var b=el('button','pbtn',t[0]);b.type='button';b.disabled=true;b.addEventListener('click',function(){if(sel.value)send(t[1](placeText(sel.value)))});box.appendChild(b);return b});
-  sel.addEventListener('change',function(){btns.forEach(function(b){b.disabled=!sel.value})});
+  sel.addEventListener('change',function(){btns.forEach(function(b,i){b.disabled=!sel.value||(U[sel.value]&&U[sel.value].t==='school'&&!(i===0?SCHOOL_READING:SCHOOL_ATTENDANCE).has(sel.value))})});
   host.appendChild(box);
-  if(id==='place-side') host.appendChild(el('div','hint','Pick a place, then choose what you want to know.'));
+  if(id==='place-side') host.appendChild(el('div','hint','Only schools with Grade 3 reading or K–3 attendance records are listed. A topic is unavailable if the selected school has no matching data.'));
 }
 buildPicker(document.getElementById('picker-side'),'place-side');
 buildPicker(document.getElementById('picker-m'),'place-m');
@@ -837,12 +839,36 @@ function answer(text){
   if(fp.amb) {ctx.pending=norm(text);ctx.pendingUnits=fp.amb;ctx.pendingAlias=fp.ambAlias||'';return {type:'clarify',say:'Which one do you mean?',options:fp.amb.map(placeText)};}
   var places=fp.places, ys=findYears(qn), topic=findTopic(qn), grp=findGroup(qn), grade=findGrade(qn);
   if(/ 2025 26 | 2026 27 | 2027 | 2028 | 2029 | 2030 /.test(qn)) return {type:'text',say:['I do not have data for that school year. This beta contains 2024–25 results and 2023–24 results for comparison.'],followups:GENERAL};
-  if(topic==='abs' && / (combined|overall|total|all|average|averaging|across|rate for|percent of|percentage of) /.test(qn) && / (k 3|kindergarten through (third|grade 3)|kindergarten to (third|grade 3)|grades? k through 3) /.test(qn) && !/ by grade|each grade|every grade/.test(qn)) {
-    var yy=(ys&&ys.length===1)?ys[0]:LATEST, v=D.A['A|'+yy+'|county|k3'];
+  // Curated, presentation-aligned questions are answered explicitly, not via broad keyword matching.
+  if(/ (what should i keep in mind|interpret|interpretation|draw conclusions|what does this data mean|limitations) /.test(qn) && !/ compare|grade:|specific school/.test(qn)) return {type:'text',say:['These numbers describe groups of public-school students, not individual children. Reading results cover third graders; attendance covers kindergarten through grade 3. Always check the school year, grade, student group, and whether a result is for a school, eight districts, or the charter-inclusive county reading total.','A difference does not tell us why it happened or what caused it. Small groups and suppressed results need extra care. Pair these data with the experiences of students, families, educators, and community partners.'],followups:['What does third-grade reading look like in Brown County public schools?','What do we know about K–3 chronic absenteeism in Brown County?']};
+  if(/ (what is|what does|define|meaning of|explain) (chronic|chronic absenteeism|absenteeism|meeting|grade level|forward exam)/.test(qn)) {var z=/chronic|absenteeism/.test(qn)?'abs':'read';return {type:'text',say:DEF[z],followups:GENERAL};}
+  if(/ (how do|how does|what are|show|compare) .* (reading|forward|literacy) .* (student groups|subgroups|demographic groups|groups of students)/.test(qn) || / reading outcomes vary across student groups/.test(qn)) return {type:'clarify',say:'Reading outcomes can be explored by student group for public-school third graders. Which breakdown would you like to explore? Brown County subgroup totals here cover the eight districts; the overall county reading figure also includes the non-district charter school.',options:['Reading by economic status in Brown County in 2024-25','Reading by disability status in Brown County in 2024-25','Reading by race and ethnicity in Brown County in 2024-25','Reading by gender in Brown County in 2024-25']};
+  if(topic==='abs' && / (what is|what does|define|meaning of|explain) /.test(qn)) return {type:'text',say:DEF.abs,followups:['What do we know about chronic absenteeism?']};
+  // Safety and grade specificity take priority over the general county K–3 summary.
+  if(topic==='abs' && / high school|middle school|grade (4|5|6|7|8|9|10|11|12)|fourth grade|fifth grade|sixth grade/.test(qn)) return {type:'text',say:['This beta includes chronic absenteeism only for public-school students in kindergarten through grade 3. I cannot report attendance for older grades here.'],followups:['Attendance by grade in Brown County in 2024-25?']};
+  if(topic==='abs' && / economic|disadvant|income|poverty|free lunch|race|ethnic|disabil|english learner|gender/.test(qn)) return {type:'text',say:['The available K–3 chronic absenteeism data are organized by grade and school or district, not by economic disadvantage or other student groups. An all-grade economic-disadvantage percentage cannot be used as a K–3 absenteeism subgroup rate.'],followups:['Attendance by grade in Brown County in 2024-25?']};
+  if(topic==='abs' && / (third grade|3 grade|grade 3|3rd grade) /.test(qn) && !grade) grade='3';
+  if(topic==='abs' && / (second grade|2 grade|grade 2|2nd grade) /.test(qn) && !grade) grade='2';
+  if(topic==='abs' && / (first grade|1 grade|grade 1|1st grade) /.test(qn) && !grade) grade='1';
+  // A general Brown County attendance question means combined K–3, not grade 3 only.
+  // Explicit grade-specific and school/district questions continue through the normal paths.
+  if(topic==='abs' && (!ys || ys.length<=1) && (!places.length || (places.length===1 && places[0]==='county')) && !grade && !/ by grade|each grade|every grade|which grade|compare.*grade|grade levels|grade specific/.test(qn) && / chronic|absen|attend/.test(qn)) {
+    var yr=(ys&&ys.length===1)?ys[0]:LATEST;
+    var total=D.A['A|'+yr+'|county|k3'];
+    remember(fig('A|'+yr+'|county|k3'));
+    if(total && Array.isArray(total)) return {type:'text',say:['In '+yr+', '+pctS(total)+' ('+num(total[0])+' of '+num(total[1])+') of public-school students in kindergarten through grade 3 across Brown County’s eight public school districts were chronically absent.','This is the combined K–3 rate calculated from underlying student counts, not the third-grade-only rate. It excludes non-district charter schools. Chronic absenteeism means missing at least 10% of enrolled school days. These figures cannot explain why students missed school.'],followups:['Attendance by grade in Brown County in '+yr+'?','What does chronic absenteeism mean?']};
+  }
+  if(topic==='abs' && (!ys || ys.length<=1) && / (combined|overall|total|all|average|averaging|across|rate for|percent of|percentage of) /.test(qn) && / (k 3|kindergarten through (third|grade 3)|kindergarten to (third|grade 3)|grades? k through 3) /.test(qn) && !/ by grade|each grade|every grade/.test(qn)) {
+    var yy=(ys&&ys.length===1)?ys[0]:LATEST, v=D.A['A|'+yy+'|county|k3']; remember(fig('A|'+yy+'|county|k3'));
     if(places.length && (places.length!==1 || places[0]!=='county')) return {type:'text',say:['The combined K–3 rate is verified here only for the eight-district Brown County aggregate. I can show grade-specific attendance for a selected school or district.'],followups:['Attendance by grade in Brown County in 2024-25?']};
     return {type:'text',say:['For '+yy+', '+pctS(v)+' ('+num(v[0])+' of '+num(v[1])+') of public-school K–3 students across Brown County’s eight public school districts were chronically absent. This combines the underlying counts, not an average of four percentages.','This is an eight-district aggregate, not a charter-inclusive countywide total. These figures describe attendance patterns, not the reasons students missed school.'],followups:['Attendance by grade in Brown County in '+yy+'?','What does chronically absent mean?']};
   }
   if(/ (averag|average|averaging|add up|sum) /.test(qn) && / (k 3|kindergarten|grade rates|grades) /.test(qn) && / (attend|absen|chronic|rate) /.test(qn)) return {type:'text',say:['A combined K–3 rate must use underlying student counts, never an average of grade percentages. I have a verified eight-district Brown County combined rate; for individual schools and districts I can show grade-specific rates.'],followups:['Attendance by grade in Brown County in 2024-25?']};
+  if(topic==='abs' && ys && ys.length>1 && (!places.length || places[0]==='county') && !grade && / chronic|absen|attend/.test(qn)) {
+    var old=fig('A|2023-24|county|k3'), now=fig('A|2024-25|county|k3');remember(old);remember(now);
+    return {type:'text',say:['Across Brown County’s eight public school districts, combined public-school K–3 chronic absenteeism was '+old.v+' ('+num(old.num)+' of '+num(old.den)+') in 2023–24 and '+now.v+' ('+num(now.num)+' of '+num(now.den)+') in 2024–25.','These are count-weighted combined K–3 rates, not averages of grade percentages. The figures describe patterns, not reasons for absence.'],followups:['Attendance by grade in Brown County in 2024-25?']};
+  }
+  if(topic==='abs' && places.length===1 && places[0]!=='county' && !grade && (!ys || ys.length===1) && / chronic|absen|attend/.test(qn) && !grp) return gradeAnswer(places[0],(ys&&ys[0])||LATEST,'all');
   if(topic==='abs' && grp) return {type:'text',say:['This beta includes K–3 chronic absence by grade, but it does not include K–3 attendance broken down by economic status, race, or other student groups. The original subgroup figures were for all grades and cannot be presented as K–3.'],followups:['Attendance by grade in Brown County','How are public-school third graders reading in Brown County?']};
   if(topic==='abs' && / all grades| all students| high school| middle school| grades? (4|5|6|7|8|9|10|11|12) /.test(qn)) return {type:'text',say:['This beta is limited to chronic absence in kindergarten through grade 3. All-grade and older-grade attendance data are not shown.'],followups:['Attendance by grade in Brown County']};
   if(topic==='abs' && / economic|disadvant|poverty|low income|free lunch/.test(qn)) return {type:'text',say:['Economic-disadvantage figures in the original file describe all enrolled grades. They are not K–3 chronic absenteeism rates, so they have been removed from this beta.'],followups:['Attendance by grade in Brown County']};
@@ -905,9 +931,9 @@ function answer(text){
 function welcome(){
   log.innerHTML='';lastFollow=null;seen={'10%':1};ctx={places:[],years:[LATEST],topic:'both',pending:null,pendingUnits:[],yearQ:null};
   var b=botRow();
-  b.appendChild(el('p',null,"Welcome! Choose 📖 Reading for public-school third graders, or 📅 Attendance for kindergarten through grade 3. Pick a school or district, or type a question below. This beta does not save your questions."));
+  b.appendChild(el('p',null,"Welcome! Choose 📖 Reading for public-school third graders, or 📅 Attendance for kindergarten through grade 3. Pick a school or district, or type a question below. This page does not intentionally store or send questions. Hosting may have separate logs; do not enter personal information."));
   var g=el('div');g.style.display='flex';g.style.flexDirection='column';g.style.gap='10px';
-  g.appendChild(el('div','eyebrow','Choose a topic'));g.appendChild(chips(['📖 Reading: How are public-school third graders reading in Brown County in 2024-25?','📅 Attendance: Attendance by grade in Brown County in 2024-25?'],true));b.appendChild(g);
+  g.appendChild(el('div','eyebrow','Try one of these questions'));g.appendChild(chips(['What does third-grade reading look like in Brown County public schools?','What do we know about K–3 chronic absenteeism in Brown County?','How do third-grade reading outcomes vary across student groups?','What should I keep in mind when interpreting these results?'],true));b.appendChild(g);
 }
 function typing(){
   var b=botRow();var t=el('div','thinking');var d=el('span','dots');d.innerHTML='<i></i><i></i><i></i>';t.appendChild(d);t.appendChild(el('span',null,'Looking that up...'));b.appendChild(t);
@@ -932,7 +958,7 @@ function send(text){
 form.addEventListener('submit',function(e){e.preventDefault();var t=ask.value;ask.value='';ask.style.height='';send(t)});
 ask.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit()}});
 ask.addEventListener('input',function(){ask.style.height='auto';ask.style.height=Math.min(ask.scrollHeight,160)+'px'});
-document.addEventListener('click',function(e){var r=e.target.closest('[data-act="reset"]');if(r){welcome();window.scrollTo(0,0);ask.focus()}});
+
 welcome();
 
 })();
