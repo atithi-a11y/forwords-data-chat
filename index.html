@@ -28,6 +28,41 @@
 .followups{max-width:100%;overflow-wrap:anywhere}
 .followups button{white-space:normal!important;text-align:left;line-height:1.4;min-height:44px}
 @media(max-width:600px){.prompt-grid{grid-template-columns:1fr!important;gap:12px!important}.prompt-card{min-height:0;padding:17px!important}.welcome-panel{max-width:100%;padding:15px!important}.rank-scroll{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.card{max-width:100%}}
+
+/* Accessible, responsive school-building comparison */
+.rank-scroll.building-results{border:1px solid #d5e3d9;border-radius:16px;overflow-x:auto;box-shadow:0 3px 12px rgba(12,65,40,.06);max-width:100%;background:#fff}
+.building-results .rank-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.building-results th{background:#eaf3ed;color:#173d2b;font-size:12px;line-height:1.4;white-space:normal;min-width:115px;padding:13px 11px}
+.building-results th:first-child{min-width:185px;position:sticky;left:0;z-index:2;background:#eaf3ed;box-shadow:1px 0 #d5e3d9}
+.building-results td{padding:12px 11px;border-bottom:1px solid #e9eee9;line-height:1.5;min-width:115px;vertical-align:middle;font-variant-numeric:tabular-nums}
+.building-results td:first-child{position:sticky;left:0;z-index:1;min-width:185px;max-width:220px;font-weight:750;background:#fff;box-shadow:1px 0 #e9eee9}
+.building-results tr:nth-child(even) td{background:#f7faf8}
+.building-results tr:nth-child(even) td:first-child{background:#f7faf8}
+.building-results .metric-track{height:5px;margin-top:6px}
+.trend-pill{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 10px;font-size:13px;font-weight:800;white-space:nowrap;border:1px solid transparent}
+.trend-good{color:#11653b;background:#e5f5eb;border-color:#b9dec8}
+.trend-watch{color:#9c2933;background:#fff0f0;border-color:#f0c7c9}
+.trend-flat{color:#53606b;background:#f0f3f5;border-color:#dce2e6}
+.trend-arrow{font-size:17px;line-height:1}
+.trend-caption{font-size:11px;margin-top:4px;color:#59665f;font-weight:650}
+@media(max-width:650px){
+ .rank-scroll.building-results{overflow:visible;border:0;box-shadow:none;background:transparent}
+ .building-results .rank-table,.building-results tbody{display:block;width:100%;min-width:0!important}
+ .building-results thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+ .building-results tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 10px;margin:0 0 12px;padding:13px;border:1px solid #d7e5db;border-radius:14px;background:#fff!important;box-shadow:0 2px 8px rgba(16,63,40,.045)}
+ .building-results td,.building-results tr:nth-child(even) td{display:block;position:static!important;min-width:0!important;max-width:none!important;box-shadow:none!important;border:0;background:transparent!important;padding:7px 2px;overflow-wrap:anywhere;font-size:13px}
+ .building-results td:first-child{grid-column:1/-1;font-size:15px;font-weight:800;color:#183e2b;border-bottom:1px solid #e6ede8;padding:2px 0 10px;margin-bottom:4px}
+ .building-results td:not(:first-child)::before{content:attr(data-label);display:block;font-size:11px;font-weight:750;line-height:1.35;color:#52675a;margin-bottom:5px}
+ .building-results td[data-label*="change"]{grid-column:1/-1;border-top:1px dashed #dce7df;margin-top:5px;padding-top:10px}
+ .building-results .trend-pill{font-size:14px}
+ .building-results .metric-track{max-width:180px}
+}
+.sort-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:12px;background:#f5faf6;border-bottom:1px solid #d5e3d9}
+.sort-label{font-size:12px;font-weight:750;color:#294b37;margin-right:4px}
+.sort-button{border:1px solid #b8d3c0;border-radius:999px;padding:9px 13px;background:#fff;color:#23503a;font-size:13px;font-weight:750;cursor:pointer;min-height:40px}
+.sort-button.active{background:#17683f;color:white;border-color:#17683f}
+.sort-button:focus-visible{outline:3px solid #f2b84b;outline-offset:2px}
+@media(max-width:650px){.sort-toolbar{border:1px solid #d5e3d9;border-radius:13px;margin-bottom:12px}.sort-label{flex-basis:100%}.sort-button{flex:1;min-width:100px}}
 </style></head><body><style id="mobile-welcome-fix">
 /* First visit: an uncluttered invitation, then a short disclosure, then the chat. */
 .start-screen{position:fixed;inset:0;z-index:11000;background:linear-gradient(155deg,#eff7e8 0%,#ffffff 62%,#e7f3e5);display:flex;align-items:center;justify-content:center;padding:24px;padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom));overflow:auto}
@@ -554,11 +589,60 @@ function renderAnswer(ans){
   say.forEach(function(p){b.appendChild(el('p',null,String(p)))});
   if(ans.type==='clarify'){if(/12\.1%/.test(say.join(' '))&&/11\.6%/.test(say.join(' '))){var sm=el('section','card');var hh=el('div','card-h');hh.appendChild(el('h2',null,'Brown County K–3 attendance context'));sm.appendChild(hh);var ss=el('div','sec');ss.appendChild(table({rows:[['A|2023-24|county|k3'],['A|2024-25|county|k3']]},false));sm.appendChild(ss);b.appendChild(sm);}if(ans.options&&ans.options.length)b.appendChild(chips(ans.options.slice(0,4)));return; }
   if(ans.type==='text'){
-    if(ans.rankRows&&ans.rankRows.length){var wrap=el('div','rank-scroll');var tt=el('table','rank-table');var hh=el('thead');var hr=el('tr');(ans.rankHeaders||['Rank','School or district','K–3 chronic absence','Grade 3 reading','Score']).forEach(function(v){hr.appendChild(el('th',null,v))});hh.appendChild(hr);tt.appendChild(hh);var bb=el('tbody');ans.rankRows.forEach(function(r){var tr=el('tr');r.forEach(function(v){tr.appendChild(el('td',null,String(v)))});bb.appendChild(tr)});tt.appendChild(bb);wrap.appendChild(tt);b.appendChild(wrap);}
+    if(ans.rankRows&&ans.rankRows.length){var wrap=el('div','rank-scroll');if(ans.rankHeaders&&ans.rankHeaders[0]==='School building')wrap.classList.add('building-results');if(wrap.classList.contains('building-results')&&ans.rankHeaders.some(function(h){return / change$/.test(h)})){
+  var toolbar=el('div','sort-toolbar');
+  toolbar.appendChild(el('span','sort-label','Sort by improvement (pp):'));
+  var choices=[];
+  if(ans.rankHeaders.indexOf('Attendance change')>=0)choices.push(['abs','Attendance']);
+  if(ans.rankHeaders.indexOf('Reading change')>=0)choices.push(['read','Reading']);
+  choices.forEach(function(choice){
+    var btn=el('button','sort-button'+(ans.sortMetric===choice[0]?' active':''),choice[1]+' ↓');
+    btn.type='button';btn.setAttribute('aria-label','Sort '+choice[1].toLowerCase()+' improvement highest to lowest');
+    btn.addEventListener('click',function(){
+      var updated=schoolBuildingAnswer(ans.sortScope,YEARS.slice(),ans.sortTopic,choice[0],'desc');
+      var body=wrap.querySelector('tbody');
+      if(!body)return;
+      var map={};Array.from(body.children).forEach(function(tr){map[tr.children[0].textContent]=tr});
+      updated.rankRows.forEach(function(row){if(map[row[0]])body.appendChild(map[row[0]])});
+      Array.from(toolbar.querySelectorAll('button')).forEach(function(b){b.classList.remove('active')});
+      btn.classList.add('active');
+      ctx.lastBuilding={d:ans.sortScope,topic:ans.sortTopic,metric:choice[0]};
+    });
+    toolbar.appendChild(btn);
+  });
+  wrap.appendChild(toolbar);
+}
+var tt=el('table','rank-table');var hh=el('thead');var hr=el('tr');(ans.rankHeaders||['Rank','School or district','K–3 chronic absence','Grade 3 reading','Score']).forEach(function(v){hr.appendChild(el('th',null,v))});hh.appendChild(hr);tt.appendChild(hh);var bb=el('tbody');ans.rankRows.forEach(function(r){var tr=el('tr');r.forEach(function(v,j){var td=el('td',null);var head=(ans.rankHeaders||[])[j]||'';td.setAttribute('data-label',head);if(/(?:attendance|reading) change/i.test(head)&&typeof v==='string'&&v!=='—'){
+  var positive=/Improved/.test(v),flat=/Flat/.test(v);var pill=el('span','trend-pill '+(flat?'trend-flat':positive?'trend-good':'trend-watch'));
+  var match=v.match(/([↑↓→])\s*([\d.]+)\s*pp/);var arrow=match?match[1]:'→',amount=match?match[2]+' pp':v;
+  pill.appendChild(el('span','trend-arrow',arrow));pill.appendChild(el('span',null,amount));td.appendChild(pill);
+  
+ }else{td.appendChild(document.createTextNode(String(v)));if(j>0&&typeof v==='string'&&/^\d+(?:\.\d+)?%/.test(v)){var pct=parseFloat(v),track=el('div','metric-track');track.setAttribute('aria-label',pct.toFixed(1)+' percent');var fill=el('div','metric-fill');fill.style.width=Math.max(0,Math.min(100,pct))+'%';track.appendChild(fill);td.appendChild(track);}}
+ tr.appendChild(td)});bb.appendChild(tr)});tt.appendChild(bb);wrap.appendChild(tt);b.appendChild(wrap);}
+    if(ans.visualUnit){
+      var vv=el('section','card'),vh=el('div','card-h');vh.appendChild(el('h2',null,'Data at a glance · '+unitName(ans.visualUnit)));vv.appendChild(vh);
+      var vb=el('div','sec'),tiles=el('div','tiles'),vyears=ans.visualYears||[LATEST],vtopic=ans.visualTopic||'both',n=0;
+      vyears.forEach(function(y){
+        if(vtopic!=='read'){
+          var ka=k3(ans.visualUnit,y);
+          if(ka&&fullK(ka)){var kk=el('div','tile');kk.appendChild(el('div','lbl','K–3 chronic absenteeism · '+y));kk.appendChild(el('div','value',ka.p.toFixed(1)+'%'));kk.appendChild(el('div','sub',num(ka.a)+' of '+num(ka.n)));var kt=el('div','metric-track'),kf=el('div','metric-fill');kf.style.width=ka.p+'%';kt.appendChild(kf);kk.appendChild(kt);tiles.appendChild(kk);n++;}
+        }
+        if(vtopic!=='abs'){
+          var rf=fig('R|'+y+'|'+ans.visualUnit+'|all');
+          if(rf&&rf.ok){remember(rf);tiles.appendChild(tile(rf,false));n++;}
+        }
+      });
+      if(n){vb.appendChild(tiles);vv.appendChild(vb);b.appendChild(vv);}
+    }
     var fullSay=say.join(' '), visualRefs=null, visualTitle='';
-    if(/54\.2%/.test(fullSay)&&/53\.6%/.test(fullSay)){visualRefs=[['R|2023-24|county|all'],['R|2024-25|county|all']];visualTitle='Third-grade reading · Brown County';}
+    if(/54\.5%/.test(fullSay)&&/53\.6%/.test(fullSay)){visualRefs=[['R|2023-24|county|all'],['R|2024-25|county|all']];visualTitle='Third-grade reading · Brown County';}
     else if(/12\.1%/.test(fullSay)&&/11\.6%/.test(fullSay)){visualRefs=[['A|2023-24|county|k3'],['A|2024-25|county|k3']];visualTitle='K–3 chronic absenteeism · Eight districts';}
     if(visualRefs){var summary=el('section','card');var header=el('div','card-h');header.appendChild(el('h2',null,visualTitle));header.appendChild(el('div','sub','2023–24 and 2024–25 · Source: Wisconsin DPI'));summary.appendChild(header);var body=el('div','sec');body.appendChild(table({rows:visualRefs},false));summary.appendChild(body);b.appendChild(summary);}
+    // If a narrative answer contains public rates but no prepared figure card, show a compact visual summary.
+    if(!ans.visualUnit && !visualRefs && !(ans.rankRows&&ans.rankRows.length)){
+      var matches=[],used={};say.forEach(function(line){(String(line).match(/\b\d{1,3}(?:\.\d+)?%/g)||[]).forEach(function(v){if(!used[v]){used[v]=1;matches.push(v)}})});
+      if(matches.length){var sc=el('section','card'),sh=el('div','card-h');sh.appendChild(el('h2',null,'Numbers mentioned in this answer'));sc.appendChild(sh);var sb=el('div','sec');matches.slice(0,8).forEach(function(v){var rr=el('div');rr.style.margin='9px 0';rr.appendChild(el('b',null,v));var trk=el('div','metric-track'),fill=el('div','metric-fill');fill.style.width=Math.max(0,Math.min(100,parseFloat(v)))+'%';trk.appendChild(fill);rr.appendChild(trk);sb.appendChild(rr)});sb.appendChild(el('div','tbl-note','These bars show the percentages mentioned above. Read the explanation for the year, population, and meaning of each rate.'));sc.appendChild(sb);b.appendChild(sc);}
+    }
     if(ans.questions&&ans.questions.length){var ul=el('ul','qlist');ans.questions.forEach(function(q){ul.appendChild(el('li',null,String(q)))});b.appendChild(ul);}
     var bad=numbersCheck(say.concat(ans.questions||[]));
     if(bad.length){var ck=el('div','check');ck.innerHTML=ICON.warn;ck.appendChild(el('span',null,'Please double-check '+bad.join(', ')+' against the DPI source. It did not come from ABC\'s data file.'));b.appendChild(ck);}
@@ -926,42 +1010,65 @@ function placeK3Answer(u,years,topic){
   if(topic!=='abs')bits.push(r&&r.ok?'Grade 3 reading '+r.v+' ('+num(r.num)+' of '+num(r.den)+')':'Grade 3 reading not reportable');
   lines.push(y+': '+bits.join('; ')+'.');
  });
- if(years.length===2){var a=k3(u,years[0]),b=k3(u,years[1]);if(a&&b&&topic!=='read'&&fullK(a)&&fullK(b))lines.push('K–3 absenteeism changed by '+(b.p-a.p).toFixed(1)+' percentage points (negative means improvement).');}
- lines.push('These group-level figures cannot explain why students missed school or predict an individual child’s reading. Small school cohorts can fluctuate substantially.');
- return {type:'text',say:[unitName(u)+': available attendance and reading results.'].concat(lines),followups:['How did '+unitName(u)+' change since last year?','What about third-grade reading at '+unitName(u)+'?','What should I keep in mind before drawing conclusions?']};
+ if(years.length===2){var a=k3(u,years[0]),b=k3(u,years[1]);if(a&&b&&topic!=='read'&&fullK(a)&&fullK(b))lines.push('K–3 chronic absenteeism '+(b.p<a.p?'decreased by ':'increased by ')+Math.abs(b.p-a.p).toFixed(1)+' percentage points ('+(b.p<a.p?'improvement':'increase in absenteeism')+').');}
+ lines.push('These group-level figures cannot explain why students missed school or predict an individual child’s reading. Smaller school groups can fluctuate substantially.');
+ return {type:'text',visualUnit:u,visualYears:years.slice(),visualTopic:topic,say:[unitName(u)+': available attendance and reading results.'].concat(lines),followups:['How did '+unitName(u)+' change since last year?','What about third-grade reading at '+unitName(u)+'?','What should I keep in mind before drawing conclusions?']};
 }
 /* Conversational routing: school-building drilldowns and evidence-first, non-blaming interpretation. */
 function isBuildingDrill(q){return / (by|each|all|list|show|give|breakdown|break down|compare|comparison|across) .* (school buildings?|school buildings?|schools?|elementary schools?|buildings?) | (school buildings?|buildings?|schools?) (by|within|in|for|of) /.test(q) && / (school|building|elementary) /.test(q)}
-function schoolBuildingAnswer(d,years,topic){
+function schoolBuildingAnswer(d,years,topic,sortMetric,sortDirection){
  // Always show both years for school-building comparisons unless a single year was explicitly requested.
  var yy=years&&years.length===1?years.slice():YEARS.slice();
  var ids=Object.keys(U).filter(function(id){return U[id].t==='school' && (d==='county'||U[id].d===d) && YEARS.some(function(y){return !!D.K[y+'|'+id]||!!fig('R|'+y+'|'+id+'|all')})});
  ids.sort(function(a,b){return unitName(a).localeCompare(unitName(b))});
  function read(id,y){var r=fig('R|'+y+'|'+id+'|all');return r&&r.ok&&r.den>=20?r:null;}
- function attend(id,y){var k=k3(id,y);return k&&fullK(k)&&k.den>=20?k:null;}
+ function attend(id,y){var k=k3(id,y);return k&&fullK(k)&&k.n>=20?k:null;}
  function showR(r){return r?r.v+' ('+num(r.num)+'/'+num(r.den)+')':'—';}
- function showA(k){return k?k.p.toFixed(1)+'% ('+num(k.num)+'/'+num(k.den)+')':'—';}
+ function showA(k){return k?k.p.toFixed(1)+'% ('+num(k.a)+'/'+num(k.n)+')':'—';}
  function change(before,after,isAbs){
    if(!before||!after)return '—';
    var delta=after.p-before.p,amount=Math.abs(delta).toFixed(1);
-   if(Math.abs(delta)<0.05)return '→ No change (0.0 pp)';
+   if(Math.abs(delta)<0.05)return '→ 0.0 pp · Flat';
    // Attendance decrease is favorable; reading increase is favorable.
-   return (delta>0?'↑ ':'↓ ')+(delta>0?'Increase ':'Decrease ')+amount+' pp'+(isAbs?(delta<0?' · Improved':' · Explore further'):(delta>0?' · Improved':' · Explore further'));
+   return (delta>0?'↑ ':'↓ ')+amount+' pp'+(isAbs?(delta<0?' · Improved':' · Explore further'):(delta>0?' · Improved':' · Explore further'));
  }
  var rows=ids.map(function(id){
    var r0=read(id,YEARS[0]),r1=read(id,YEARS[1]),a0=attend(id,YEARS[0]),a1=attend(id,YEARS[1]);
    var vals=topic==='read'?[showR(r0),showR(r1),change(r0,r1,false)]:topic==='abs'?[showA(a0),showA(a1),change(a0,a1,true)]:[showA(a0),showA(a1),change(a0,a1,true),showR(r0),showR(r1),change(r0,r1,false)];
    if(yy.length===1){vals=topic==='read'?[showR(read(id,yy[0]))]:topic==='abs'?[showA(attend(id,yy[0]))]:[showA(attend(id,yy[0])),showR(read(id,yy[0]))];}
    return [unitName(id)].concat(vals);
- });
+ }).filter(function(r){return r.slice(1).some(function(v){return v!=='—';});});
+ if(!rows.length && topic==='abs')return {type:'text',visualUnit:d,visualYears:YEARS.slice(),visualTopic:'abs',say:['A comparable school-building K–3 attendance table is not available for '+(d==='county'?'Brown County':unitName(d))+'. The prepared data do not have reportable combined kindergarten-through-third-grade figures for these buildings in the selected years. This can happen when grades are organized across different buildings or values are suppressed.','I can show the district-wide K–3 chronic absenteeism results instead. A dash would not mean that no children missed school.'],followups:['Show K–3 attendance in '+(d==='county'?'Brown County':unitName(d)),'Show third-grade reading by school building in '+(d==='county'?'Brown County':unitName(d))]};
  if(!rows.length)return {type:'text',say:['I could not find school-building records for '+(d==='county'?'Brown County':unitName(d))+'.'],followups:['Show third-grade reading in Brown County','Show K–3 attendance in Brown County']};
  var one=yy.length===1;
+ // Sort by percentage-point improvement, highest first; nonreportable changes last.
+ // Reading: increase is improvement. Attendance: reduction is improvement.
+ var metric=sortMetric || (topic==='read'?'read':'abs'),direction=sortDirection==='asc'?'asc':'desc';
+ if(!one){
+   var sortCol=topic==='both'?(metric==='read'?6:3):3;
+   var isAbs=metric==='abs';
+   function improvement(row){
+     var v=String(row[sortCol]||'');
+     var match=v.match(/([↑↓→])\s*([\d.]+)\s*pp/);
+     if(!match)return null;
+     var signed=match[1]==='↑'?1:match[1]==='↓'?-1:0;
+     return (isAbs?-1:1)*signed*Number(match[2]);
+   }
+   rows.sort(function(a,b){
+     var av=improvement(a),bv=improvement(b);
+     if(av===null&&bv===null)return a[0].localeCompare(b[0]);
+     if(av===null)return 1;
+     if(bv===null)return -1;
+     var diff=direction==='asc'?av-bv:bv-av;
+     return Math.abs(diff)>0.00001?diff:a[0].localeCompare(b[0]);
+   });
+ }
  var label=topic==='read'?'Third-grade reading':topic==='abs'?'K–3 chronic absenteeism':'K–3 attendance and third-grade reading';
  var headers=['School building'];
  if(topic!=='read')headers=headers.concat(one?['K–3 absent '+yy[0]]:['K–3 absent '+YEARS[0],'K–3 absent '+YEARS[1],'Attendance change']);
  if(topic!=='abs')headers=headers.concat(one?['Reading '+yy[0]]:['Reading '+YEARS[0],'Reading '+YEARS[1],'Reading change']);
  var scope=d==='county'?'Brown County':unitName(d);
- return {type:'text',rankHeaders:headers,rankRows:rows,say:[label+' by school building in '+scope+'. '+(one?'Showing '+yy[0]+'.':'Showing both school years and percentage-point changes.'),'For attendance, a ↓ decrease in chronic absenteeism is an improvement. For reading, an ↑ increase in students meeting expectations is an improvement. Changes are in percentage points (pp), not percent change.','A dash (—) means a comparable, reportable value is unavailable; it does not mean zero. School-level K–3 attendance is shown only when all four grades can be combined without suppressed counts. Reading covers third grade only. These measures do not establish causes or school quality.'],followups:['Show K–3 attendance by school building in '+scope,'Show third-grade reading by school building in '+scope,'What should I keep in mind before drawing conclusions?']};
+ return {type:'text',rankHeaders:headers,rankRows:rows,sortMetric:metric,sortDirection:direction,sortScope:d,sortTopic:topic,say:[label+' by school building in '+scope+'. '+(one?'Showing '+yy[0]+'.':'Showing both school years and percentage-point changes. Sorted by '+(metric==='read'?'reading gains':'attendance improvement')+', '+(direction==='asc'?'lowest to highest':'highest to lowest')+' (pp).'),'Green marks improvement: ↓ for chronic absenteeism and ↑ for reading. Red marks the opposite. Changes are percentage points (pp), not percent change.','A dash (—) means a comparable, reportable value is unavailable; it does not mean zero. School-level K–3 attendance is shown only when all four grades can be combined without suppressed counts. Reading covers third grade only. These measures do not establish causes or school quality.'],followups:['Sort '+(topic==='read'?'reading':topic==='abs'?'attendance':'attendance')+' change highest to lowest in '+scope,'Sort '+(topic==='both'?'reading':'attendance')+' change highest to lowest in '+scope,'What can community partners learn from these changes?']};
 }
 function interpretConcern(q,places,topic){
  // Distinguish critical questions about outcomes from requests for a neutral ranking.
@@ -990,10 +1097,10 @@ function interpretConcern(q,places,topic){
  else{next.push('Which school districts have the highest K–3 chronic absenteeism rates?');next.push('How do third-grade reading results vary across Brown County districts?');}
  next.push('What can community partners do to help us understand these patterns?');
  lines.push(hasDistrict?'Would you like to see the school-building patterns within '+name+'? That may help identify where a closer conversation and coordinated resources could be useful.':hasSchool?'Would you like to look at changes over time and consider what additional information would help this school?':'Would you like to explore district patterns or school-building data to help identify where further conversation and support may be useful?');
- return {type:'text',say:lines,followups:next};
+ return {type:'text',visualUnit:id||'county',visualYears:[LATEST],visualTopic:subject,say:lines,followups:next};
 }
 function conversationFirst(qn,places,ys,topic){
- if(/ my (child|son|daughter|kid) /.test(qn)&&/ (reading|read|third grade|3 grade) /.test(qn)&&(!places.length||places[0]==='county')){var r=fig('R|2024-25|county|all'),prev=fig('R|2023-24|county|all');remember(r);remember(prev);return {type:'text',say:['In 2024–25, '+r.v+' ('+num(r.num)+' of '+num(r.den)+') of Brown County public-school third graders met the state reading expectations, compared with '+prev.v+' the year before. This is a countywide result, not a measure of your child’s abilities.','The Forward Exam gives one snapshot of reading performance. It does not describe every part of reading, the support children receive, or how far an individual child can grow. Your child’s teacher can help interpret individual progress and strengths.','Would you like to explore the reading results for your school district or school building?'],followups:['How have Brown County reading results changed?','What should I keep in mind before drawing conclusions?']};}
+ if(/ my (child|son|daughter|kid) /.test(qn)&&/ (reading|read|third grade|3 grade) /.test(qn)&&(!places.length||places[0]==='county')){var r=fig('R|2024-25|county|all'),prev=fig('R|2023-24|county|all');remember(r);remember(prev);return {type:'text',visualUnit:'county',visualYears:YEARS.slice(),visualTopic:'read',say:['In 2024–25, '+r.v+' ('+num(r.num)+' of '+num(r.den)+') of Brown County public-school third graders met the state reading expectations, compared with '+prev.v+' the year before. This is a countywide result, not a measure of your child’s abilities.','The Forward Exam gives one snapshot of reading performance. It does not describe every part of reading, the support children receive, or how far an individual child can grow. Your child’s teacher can help interpret individual progress and strengths.','Would you like to explore the reading results for your school district or school building?'],followups:['How have Brown County reading results changed?','What should I keep in mind before drawing conclusions?']};}
  var general=/ (my|our) (district|school district|school|building) /.test(qn);
  if(general&&!places.length){
   ctx.askPlace=qn;
@@ -1011,7 +1118,7 @@ function conversationFirst(qn,places,ys,topic){
  return null;
 }
 
-var ctx={places:[],years:[LATEST],topic:'both',pending:null,pendingUnits:[],yearQ:null,askPlace:null};
+var ctx={places:[],years:[LATEST],topic:'both',pending:null,pendingUnits:[],yearQ:null,askPlace:null,lastBuilding:null};
 function answer(text){
   var qn=norm(text);
   if(ctx.pending){var fp0=findPlaces(qn);if(fp0.places.length===1&&!fp0.amb&&ctx.pendingUnits.indexOf(fp0.places[0])>=0){qn=norm(ctx.pending.replace(ctx.pendingAlias,' ')+' '+text);}ctx.pending=null;ctx.pendingUnits=[];}
@@ -1024,13 +1131,28 @@ function answer(text){
   if(!places.length&&ctx.places.length&&/ (what|how) about | and | also | same | there | that school | this school | it | has it | is it /.test(qn)&&!/ compare.*districts /.test(qn)){places=ctx.places;if(topic==='both')topic=ctx.topic;}
   if(intentOpinion(qn))ctx.yearQ=null;
   if(/ brown county k 3 attendance overview /.test(qn))return profile(['county'],[LATEST],'abs','');
+  // Sorting follow-ups use the last building breakdown unless a new scope is named.
+  var sortRequest=/ (sort|order|rank|highest to lowest|lowest to highest|biggest|largest|most improved|greatest improvement|top changes) /.test(qn);
+  if(sortRequest && (ctx.lastBuilding || / (school buildings?|buildings?|schools?) /.test(qn))){
+    var scope=places.indexOf('county')>=0?'county':places.find(function(id){return U[id]&&U[id].t==='district'})||(ctx.lastBuilding&&ctx.lastBuilding.d);
+    if(scope){
+      var metric=/ (reading|read|literacy|score) /.test(qn)?'read':/ (attendance|absen) /.test(qn)?'abs':(ctx.lastBuilding&&ctx.lastBuilding.metric)||'abs';
+      var requestedTopic=ctx.lastBuilding&&ctx.lastBuilding.d===scope?ctx.lastBuilding.topic:topic;
+      if(requestedTopic==='read'&&metric==='abs')requestedTopic='both';
+      if(requestedTopic==='abs'&&metric==='read')requestedTopic='both';
+      var direction=/ (lowest to highest|ascending|smallest first|least improvement) /.test(qn)?'asc':'desc';
+      ctx.lastBuilding={d:scope,topic:requestedTopic,metric:metric};
+      ctx.places=[scope];
+      return schoolBuildingAnswer(scope,YEARS.slice(),requestedTopic,metric,direction);
+    }
+  }
   // Follow-up: "give by school building for GBAPS" inherits the named district.
   if(isBuildingDrill(qn)){
     var district=places.indexOf('county')>=0?'county':places.find(function(id){return U[id]&&U[id].t==='district'});
     // Never inherit a previous district when the participant explicitly asks for all Brown County buildings.
     if(!district && !places.length && / (all|every|across) (the )?(school )?buildings? | all (school )?buildings? /.test(qn))district='county';
     if(!district)district=ctx.places.find(function(id){return U[id]&&U[id].t==='district'});
-    if(district){ctx.places=[district];ctx.topic=topic==='both'?ctx.topic:topic;return schoolBuildingAnswer(district,ys,topic);}
+    if(district){ctx.places=[district];ctx.topic=topic==='both'?ctx.topic:topic;ctx.lastBuilding={d:district,topic:topic,metric:topic==='read'?'read':'abs'};return schoolBuildingAnswer(district,ys,topic);}
     return {type:'clarify',say:'Would you like all Brown County school buildings or buildings in a particular district? Please type Brown County or the district name or abbreviation.',options:[]};
   }
   // A concern about a school or district should never be treated automatically as an attendance question.
@@ -1146,7 +1268,7 @@ function answer(text){
 }
 
 function welcome(){
-  log.innerHTML='';lastFollow=null;seen={'10%':1};ctx={places:[],years:[LATEST],topic:'both',pending:null,pendingUnits:[],yearQ:null,askPlace:null};
+  log.innerHTML='';lastFollow=null;seen={'10%':1};ctx={places:[],years:[LATEST],topic:'both',pending:null,pendingUnits:[],yearQ:null,askPlace:null,lastBuilding:null};
   var b=botRow();
   var panel=el('section','welcome-panel');panel.setAttribute('aria-label','Choose a question to explore');
   panel.appendChild(el('div','eyebrow','FORWORDS DATA CHAT · GUIDED BETA'));
