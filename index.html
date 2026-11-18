@@ -266,6 +266,7 @@ function picture(p){
 function unitName(u){return U[u]?U[u].n:u}
 function groupLabel(g){
   if(g==='all') return 'All students';
+  if(g==='k3') return 'Kindergarten through Grade 3';
   if(g.indexOf('grade:')===0){var x=g.slice(6);return x==='KG'?'Kindergarten':'Grade '+x}
   var p=g.split(':'),v=p.slice(2).join(':');var GL={'Amer Indian':'American Indian','Pacific Isle':'Pacific Islander','Two or More':'Two or more races','Econ Disadv':'Economically disadvantaged','Not Econ Disadv':'Not economically disadvantaged','EL':'English learners','Eng Prof':'English proficient','SwD':'Students with disabilities','SwoD':'Students without disabilities','Not Migrant':'Not migrant'};return GL[v]||v;
 }
@@ -290,6 +291,7 @@ function measureName(f){
 function measureSub(f){
   if(f.m==='E') return 'Share of all students, all grades';
   if(f.m==='R') return 'Grade 3, Meeting or Advanced on the Forward Exam'+(f.g!=='all'?' · '+groupLabel(f.g):'');
+  if(f.g==='k3') return 'Kindergarten through grade 3, missed 10% or more of enrolled school days';
   if(f.g==='all') return 'Missed 10% or more of enrolled school days';
   if(f.g.indexOf('grade:')===0) return 'Missed 10% or more of enrolled school days, '+groupLabel(f.g);
   return 'Missed 10% or more of the school year, '+groupLabel(f.g)+', all grades';
@@ -297,6 +299,7 @@ function measureSub(f){
 function shortMeasure(f){
   if(f.m==='E') return 'Econ. disadvantaged';
   if(f.m==='R') return 'Grade 3 reading'+(f.g!=='all'?' ('+groupLabel(f.g)+')':'');
+  if(f.g==='k3') return 'K–3 chronic absence';
   if(f.g==='grade:3') return 'Grade 3 chronic absence';
   if(f.g==='grade:x') return 'Chronic absence';
   if(f.g==='all') return 'All-grades chronic absence';
@@ -466,7 +469,7 @@ function table(spec,hasReading){
       if(!f){td.textContent='';}
       else if(f.ok){td.appendChild(el('b',null,f.v));td.appendChild(el('small',null,num(f.num)+' of '+num(f.den)));
         if(f.small&&f.m!=='E')td.appendChild(el('span','mini','Small group'));
-        if(hasReading&&f.m==='A'&&f.g!=='grade:3')td.appendChild(el('span','mini grey','Not directly comparable'));}
+        if(hasReading&&f.m==='A'&&f.g!=='grade:3')td.appendChild(el('span','mini grey',f.g==='k3'?'K–3 population':'Not directly comparable'));}
       else{td.appendChild(el('small',null,statusText(f)));}
       row.appendChild(td);
     });
@@ -515,7 +518,7 @@ function renderAnswer(ans){
     if(figs.length){var tl=el('div','tiles');figs.forEach(function(f){tl.appendChild(tile(f,hasReading))});sec.appendChild(tl);}
     var t=c.table?table(c.table,hasReading):null; if(t) sec.appendChild(t);
     if(hasReading&&allF.some(function(f){return f.g==='grade:3'})&&!hasAbsOther){var cm=el('div','cmp');cm.innerHTML=ICON.check;cm.appendChild(el('span',null,'Grade 3 absence and Grade 3 reading can sit side by side. Student counts can differ because DPI counts attendance and test-takers separately.'));sec.appendChild(cm);}
-    if(hasReading&&hasAbsOther){var cm2=el('div','cmp');cm2.innerHTML=ICON.alert;cm2.appendChild(el('span',null,'All-grades and student-group absence cover every grade, so they are not directly comparable with Grade 3 reading.'));sec.appendChild(cm2);}
+    if(hasReading&&hasAbsOther){var cm2=el('div','cmp');cm2.innerHTML=ICON.alert;cm2.appendChild(el('span',null,allF.some(function(f){return f.g==='k3'})?'K–3 attendance includes kindergarten through third grade, while reading includes third grade only. These are different student populations and should not be interpreted as a direct comparison.':'All-grades and student-group absence cover every grade, so they are not directly comparable with Grade 3 reading.'));sec.appendChild(cm2);}
     if(allF.some(function(f){return !f.ok})){var pv=el('div','cmp');pv.innerHTML=ICON.alert;pv.appendChild(el('span',null,'Some figures are hidden because they are based on fewer than 20 students, or DPI suppressed them, to protect student privacy.'));sec.appendChild(pv);}
     card.appendChild(sec);
   }
@@ -839,6 +842,19 @@ function answer(text){
   if(fp.amb) {ctx.pending=norm(text);ctx.pendingUnits=fp.amb;ctx.pendingAlias=fp.ambAlias||'';return {type:'clarify',say:'Which one do you mean?',options:fp.amb.map(placeText)};}
   var places=fp.places, ys=findYears(qn), topic=findTopic(qn), grp=findGroup(qn), grade=findGrade(qn);
   if(/ 2025 26 | 2026 27 | 2027 | 2028 | 2029 | 2030 /.test(qn)) return {type:'text',say:['I do not have data for that school year. This beta contains 2024–25 results and 2023–24 results for comparison.'],followups:GENERAL};
+  if((!places.length || (places.length===1&&places[0]==='county')) && topic==='abs' && ys && ys.length===2 && / (change|changed|since last year|over time|compare.*last year) /.test(qn) && / (third grade|third graders|3rd grade|grade 3) /.test(qn)) {
+    return profile(['county'],YEARS.slice(),'abs','');
+  }
+  // General county change: show the two PPT measures, not third-grade-only absence.
+  if((!places.length || (places.length===1&&places[0]==='county')) &&
+     / (change|changed|since last year|compare.*last year|over time|last year compared|difference.*last year) /.test(qn) &&
+     !/ (third grade|third graders|3rd grade|grade 3|kindergarten|first grade|second grade|by grade|each grade|reading only|attendance only) /.test(qn) &&
+     (topic==='both' || /brown county/.test(qn))) {
+    var a0=fig('A|2023-24|county|k3'),a1=fig('A|2024-25|county|k3');
+    var r0=fig('R|2023-24|county|all'),r1=fig('R|2024-25|county|all');
+    [a0,a1,r0,r1].forEach(remember);
+    return {type:'answer',card:{title:'Brown County: What changed since last year?',subtitle:'2023–24 to 2024–25 · Two different student populations',table:{rows:[['A|2023-24|county|k3','R|2023-24|county|all'],['A|2024-25|county|k3','R|2024-25|county|all']]},plain:'Across eight Brown County public school districts, K–3 chronic absenteeism decreased from '+a0.v+' ('+num(a0.num)+' of '+num(a0.den)+') in 2023–24 to '+a1.v+' ('+num(a1.num)+' of '+num(a1.den)+') in 2024–25, a decrease of '+(a0.p-a1.p).toFixed(1)+' percentage points.\nThe share of public-school third graders meeting reading expectations increased from '+r0.v+' ('+num(r0.num)+' of '+num(r0.den)+') to '+r1.v+' ('+num(r1.num)+' of '+num(r1.den)+'), an increase of '+(r1.p-r0.p).toFixed(1)+' percentage points. The reading county total includes the non-district charter school; the K–3 attendance total covers eight districts.\nThese two measures cover different student populations. Changes alone do not explain why outcomes changed.',opener:'What else would help us understand these changes and support children and families?'},followups:['What do we know about K–3 chronic absenteeism in Brown County?','How do third-grade reading outcomes vary across student groups?','What should I keep in mind when interpreting these results?']};
+  }
   // Curated, presentation-aligned questions are answered explicitly, not via broad keyword matching.
   if(/ (what should i keep in mind|interpret|interpretation|draw conclusions|what does this data mean|limitations) /.test(qn) && !/ compare|grade:|specific school/.test(qn)) return {type:'text',say:['These numbers describe groups of public-school students, not individual children. Reading results cover third graders; attendance covers kindergarten through grade 3. Always check the school year, grade, student group, and whether a result is for a school, eight districts, or the charter-inclusive county reading total.','A difference does not tell us why it happened or what caused it. Small groups and suppressed results need extra care. Pair these data with the experiences of students, families, educators, and community partners.'],followups:['What does third-grade reading look like in Brown County public schools?','What do we know about K–3 chronic absenteeism in Brown County?']};
   if(/ (what is|what does|define|meaning of|explain) (chronic|chronic absenteeism|absenteeism|meeting|grade level|forward exam)/.test(qn)) {var z=/chronic|absenteeism/.test(qn)?'abs':'read';return {type:'text',say:DEF[z],followups:GENERAL};}
