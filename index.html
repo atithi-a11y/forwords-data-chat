@@ -63,6 +63,7 @@
 .sort-button.active{background:#17683f;color:white;border-color:#17683f}
 .sort-button:focus-visible{outline:3px solid #f2b84b;outline-offset:2px}
 @media(max-width:650px){.sort-toolbar{border:1px solid #d5e3d9;border-radius:13px;margin-bottom:12px}.sort-label{flex-basis:100%}.sort-button{flex:1;min-width:100px}}
+.answer-feedback{margin:12px 0 2px;padding-top:10px;border-top:1px solid #dce8df}.feedback-btn{background:transparent;border:1px solid #b9d2c1;border-radius:999px;padding:8px 12px;color:#24533a;font-weight:700;font-size:12px;cursor:pointer}.feedback-note{margin-top:9px;background:#f6f9f6;border:1px solid #dbe8df;border-radius:10px;padding:11px;font-size:13px;line-height:1.5;color:#294537}
 </style></head><body><style id="mobile-welcome-fix">
 /* First visit: an uncluttered invitation, then a short disclosure, then the chat. */
 .start-screen{position:fixed;inset:0;z-index:11000;background:linear-gradient(155deg,#eff7e8 0%,#ffffff 62%,#e7f3e5);display:flex;align-items:center;justify-content:center;padding:24px;padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom));overflow:auto}
@@ -402,8 +403,9 @@ function shortMeasure(f){
   return 'Chronic absence, '+groupLabel(f.g);
 }
 function statusText(f){
-  if(f.status==='C') return 'Hidden to protect a smaller group';
-  return 'Too few students to report';
+  if(f.status==='C') return 'Suppressed in the prepared source';
+  if(f.status==='S') return 'Not reportable from prepared data';
+  return 'Not available in the prepared data';
 }
 function whoLabel(f){return f.unit+' · '+f.y}
 function countText(f){
@@ -585,9 +587,19 @@ function numbersCheck(texts){
 }
 function renderAnswer(ans){
   var b=botRow();
+  // Local-only feedback helper; does not submit the conversation anywhere.
+  function feedback(){
+    var foot=el('div','answer-feedback');var btn=el('button','feedback-btn','Found an issue?');btn.type='button';
+    btn.addEventListener('click',function(){
+      var note=el('div','feedback-note','This beta can make mistakes. Please tell the Achieve Brown County team which question you asked and what seemed incorrect. Do not include any student information. The chatbot cannot send feedback automatically.');
+      if(foot.querySelector('.feedback-note')){foot.querySelector('.feedback-note').remove();return;}
+      foot.appendChild(note);
+    });
+    foot.appendChild(btn);b.appendChild(foot);
+  }
   var say=Array.isArray(ans.say)?ans.say:(ans.say?[ans.say]:[]);
   say.forEach(function(p){b.appendChild(el('p',null,String(p)))});
-  if(ans.type==='clarify'){if(/12\.1%/.test(say.join(' '))&&/11\.6%/.test(say.join(' '))){var sm=el('section','card');var hh=el('div','card-h');hh.appendChild(el('h2',null,'Brown County K–3 attendance context'));sm.appendChild(hh);var ss=el('div','sec');ss.appendChild(table({rows:[['A|2023-24|county|k3'],['A|2024-25|county|k3']]},false));sm.appendChild(ss);b.appendChild(sm);}if(ans.options&&ans.options.length)b.appendChild(chips(ans.options.slice(0,4)));return; }
+  if(ans.type==='clarify'){feedback();if(/12\.1%/.test(say.join(' '))&&/11\.6%/.test(say.join(' '))){var sm=el('section','card');var hh=el('div','card-h');hh.appendChild(el('h2',null,'Brown County K–3 attendance context'));sm.appendChild(hh);var ss=el('div','sec');ss.appendChild(table({rows:[['A|2023-24|county|k3'],['A|2024-25|county|k3']]},false));sm.appendChild(ss);b.appendChild(sm);}if(ans.options&&ans.options.length)b.appendChild(chips(ans.options.slice(0,4)));return; }
   if(ans.type==='text'){
     if(ans.rankRows&&ans.rankRows.length){var wrap=el('div','rank-scroll');if(ans.rankHeaders&&ans.rankHeaders[0]==='School building')wrap.classList.add('building-results');if(wrap.classList.contains('building-results')&&ans.rankHeaders.some(function(h){return / change$/.test(h)})){
   var toolbar=el('div','sort-toolbar');
@@ -638,16 +650,13 @@ var tt=el('table','rank-table');var hh=el('thead');var hr=el('tr');(ans.rankHead
     if(/54\.5%/.test(fullSay)&&/53\.6%/.test(fullSay)){visualRefs=[['R|2023-24|county|all'],['R|2024-25|county|all']];visualTitle='Third-grade reading · Brown County';}
     else if(/12\.1%/.test(fullSay)&&/11\.6%/.test(fullSay)){visualRefs=[['A|2023-24|county|k3'],['A|2024-25|county|k3']];visualTitle='K–3 chronic absenteeism · Eight districts';}
     if(visualRefs){var summary=el('section','card');var header=el('div','card-h');header.appendChild(el('h2',null,visualTitle));header.appendChild(el('div','sub','2023–24 and 2024–25 · Source: Wisconsin DPI'));summary.appendChild(header);var body=el('div','sec');body.appendChild(table({rows:visualRefs},false));summary.appendChild(body);b.appendChild(summary);}
-    // If a narrative answer contains public rates but no prepared figure card, show a compact visual summary.
-    if(!ans.visualUnit && !visualRefs && !(ans.rankRows&&ans.rankRows.length)){
-      var matches=[],used={};say.forEach(function(line){(String(line).match(/\b\d{1,3}(?:\.\d+)?%/g)||[]).forEach(function(v){if(!used[v]){used[v]=1;matches.push(v)}})});
-      if(matches.length){var sc=el('section','card'),sh=el('div','card-h');sh.appendChild(el('h2',null,'Numbers mentioned in this answer'));sc.appendChild(sh);var sb=el('div','sec');matches.slice(0,8).forEach(function(v){var rr=el('div');rr.style.margin='9px 0';rr.appendChild(el('b',null,v));var trk=el('div','metric-track'),fill=el('div','metric-fill');fill.style.width=Math.max(0,Math.min(100,parseFloat(v)))+'%';trk.appendChild(fill);rr.appendChild(trk);sb.appendChild(rr)});sb.appendChild(el('div','tbl-note','These bars show the percentages mentioned above. Read the explanation for the year, population, and meaning of each rate.'));sc.appendChild(sb);b.appendChild(sc);}
-    }
+    // Never create unlabelled bars from prose: they can misidentify the measure or year.
     if(ans.questions&&ans.questions.length){var ul=el('ul','qlist');ans.questions.forEach(function(q){ul.appendChild(el('li',null,String(q)))});b.appendChild(ul);}
     var bad=numbersCheck(say.concat(ans.questions||[]));
     if(bad.length){var ck=el('div','check');ck.innerHTML=ICON.warn;ck.appendChild(el('span',null,'Please double-check '+bad.join(', ')+' against the DPI source. It did not come from ABC\'s data file.'));b.appendChild(ck);}
-    followups(ans.followups);return;
+    feedback();followups(ans.followups);return;
   }
+  feedback();
   var c=ans.card||{};
   var figs=(c.figures||[]).map(fig).filter(Boolean).slice(0,4);
   var tblRefs=(c.table&&c.table.rows)||[];
@@ -669,7 +678,7 @@ var tt=el('table','rank-table');var hh=el('thead');var hr=el('tr');(ans.rankHead
     var t=c.table?table(c.table,hasReading):null; if(t) sec.appendChild(t);
     if(hasReading&&allF.some(function(f){return f.g==='grade:3'})&&!hasAbsOther){var cm=el('div','cmp');cm.innerHTML=ICON.check;cm.appendChild(el('span',null,'Grade 3 absence and Grade 3 reading can sit side by side. Student counts can differ because DPI counts attendance and test-takers separately.'));sec.appendChild(cm);}
     if(hasReading&&hasAbsOther){var cm2=el('div','cmp');cm2.innerHTML=ICON.alert;cm2.appendChild(el('span',null,allF.some(function(f){return f.g==='k3'})?'K–3 attendance includes kindergarten through third grade, while reading includes third grade only. These are different student populations and should not be interpreted as a direct comparison.':'All-grades and student-group absence cover every grade, so they are not directly comparable with Grade 3 reading.'));sec.appendChild(cm2);}
-    if(allF.some(function(f){return !f.ok})){var pv=el('div','cmp');pv.innerHTML=ICON.alert;pv.appendChild(el('span',null,'Some figures are hidden because they are based on fewer than 20 students, or DPI suppressed them, to protect student privacy.'));sec.appendChild(pv);}
+    if(allF.some(function(f){return !f.ok})){var pv=el('div','cmp');pv.innerHTML=ICON.alert;pv.appendChild(el('span',null,'Some results are unavailable or suppressed in the prepared DPI data. This does not necessarily mean the group has fewer than 20 students.'));sec.appendChild(pv);}
     card.appendChild(sec);
   }
   if(hasMeans){
@@ -894,7 +903,7 @@ function profile(places,ys,topic,yearNote){
     var fr=fig('R|'+yy+'|'+p+'|all'),fa=fig('A|'+yy+'|'+p+'|'+(fullK(k3(p,yy))?'k3':'grade:3')),bits=[];
     if(topic!=='abs'&&fr&&fr.ok)bits.push(readS(fr)); if(topic!=='read'&&fa&&fa.ok)bits.push(absS(fa));
     if(bits.length)S.push(cap(atName(p))+(ys.length>1?' in '+yy:'')+', '+bits.join(', and ')+'.');
-    else S.push('Numbers for '+shortName(p)+' are hidden because too few students were counted.');
+    else S.push('Reportable numbers for '+shortName(p)+' are not available for the selected measure and year.');
     if((fr&&fr.small)||(fa&&fa.small))small=true;
   })});
   if(small)S.push('Some of these come from small groups of students, so a few kids can change them a lot.');
@@ -907,6 +916,10 @@ function groupAnswer(u,y,fam,topic){
   var src=topic==='abs'?D.A:D.R, m=topic==='abs'?'A':'R';
   var keys=Object.keys(src).filter(function(k){var p=k.split('|');return p[0]===m&&p[1]===y&&p[2]===u&&p[3].indexOf(pre)===0&&p[3].indexOf('[Data Suppressed]')<0});
   var fs=keys.map(fig).filter(Boolean), ok=fs.filter(function(f){return f.ok});
+  if(topic==='read'&&u==='county'&&fs.length&&!ok.length){
+    var familyTitle={'Race/Ethnicity':'race and ethnicity','Economic Status':'economic status','EL Status':'English learner status','Disability Status':'disability status','Gender':'gender','Migrant Status':'migrant status'}[fam];
+    return {type:'text',say:['This eight-district third-grade reading breakdown by '+familyTitle+' cannot be calculated reliably from the prepared district results. Some source entries are suppressed. That does not mean the entire Brown County group has fewer than 20 students.','You can still explore available district-level group results, or see the overall eight-district reading result. The absence of a combined group figure is a data limitation, not a conclusion about students.'],followups:['Show third-grade reading by '+familyTitle+' in Green Bay Area Public in '+y,'Show third-grade reading by '+familyTitle+' in Howard-Suamico in '+y,'Show overall third-grade reading in Brown County in '+y]};}
+
   var famName={'Race/Ethnicity':'race and ethnicity','Economic Status':'family income','EL Status':'English learner status','Disability Status':'disability status','Gender':'gender','Migrant Status':'migrant status'}[fam];
   var S=[];
   if(u==='county'&&topic==='read') S.push('Brown County reading results and reading subgroups cover eight public school districts.');
@@ -914,21 +927,21 @@ function groupAnswer(u,y,fam,topic){
   else{
     S.push(topic==='abs'?'Here is the percentage of students in each group '+atName(u)+' were chronically absent (missed 10% or more of enrolled days) in '+y+', by '+famName+'. These numbers cover all grades, so they are not directly comparable with third grade reading.'
       :'Here is the percentage of public-school third graders in each group '+atName(u)+' who were reading at grade level in '+y+', by '+famName+'.');
-    if(ok.length<fs.length) S.push((fs.length-ok.length)+' of the '+fs.length+' groups are hidden because they are too small to report, to protect student privacy.');
+    if(ok.length<fs.length) S.push(u==='county'?'Some eight-district group totals cannot be calculated reliably from the available district-level figures, including suppressed entries. A dash does not mean the whole county group has fewer than 20 students.':'Some results are unavailable or suppressed in the prepared DPI figures. A missing result does not necessarily mean a group has fewer than 20 students.');
     S.push('Looking at groups side by side can show where extra support may help most. It is a starting point for conversation, not a judgment of any group of students.');
   }
   fs.forEach(remember);
   var others=['Race/Ethnicity','Economic Status','EL Status','Disability Status'].filter(function(x){return x!==fam});
   var lbl={'Race/Ethnicity':'race and ethnicity','Economic Status':'family income','EL Status':'English learners','Disability Status':'students with disabilities'};
   return {type:'answer',card:{title:shortName(u)+': '+(topic==='abs'?'attendance':'3rd grade reading')+' by '+famName,subtitle:y,table:fs.length?{rows:fs.map(function(f){return [f.ref]})}:null,plain:S.join(' '),opener:'What would help every group of students feel welcome and supported at school?'},
-    followups:fu([topic==='abs'?'How are different groups of 3rd graders reading at '+shortName(u)+'?':'How does attendance differ by '+famName+' at '+shortName(u)+'?','How are '+lbl[others[0]]+' doing at '+shortName(u)+'?','How are '+lbl[others[1]]+' doing at '+shortName(u)+'?'])};
+    followups:fu([topic==='abs'?'Show chronic absenteeism by grade at '+shortName(u)+' in '+y:'Show third-grade reading by '+famName+' in Green Bay Area Public in '+y,(topic==='abs'?'Show K–3 chronic absenteeism at ':'Show third-grade reading by '+lbl[others[0]]+' at ')+shortName(u)+' in '+y,(topic==='abs'?'Compare K–3 chronic absenteeism in ':'Show third-grade reading by '+lbl[others[1]]+' at ')+shortName(u)+' in '+y])};
 }
 function gradeAnswer(u,y,g){
   var order=['KG','1','2','3'];
   var fs=(g&&g!=='all'?[g]:order).map(function(x){return fig('A|'+y+'|'+u+'|grade:'+x)}).filter(Boolean);
   if(!fs.length) return {type:'text',say:['I don\'t have attendance by grade for '+shortName(u)+' in '+y+'.'],followups:GENERAL};
   var S=[g&&g!=='all'?'Here is the public-school '+groupLabel('grade:'+g)+' chronic absenteeism result '+atName(u)+' in '+y+'.':'Here is the share of public-school students in each grade '+atName(u)+' who were chronically absent (missed 10% or more of enrolled days) in '+y+'.'];
-  if(g&&g!=='all'){var f=fig('A|'+y+'|'+u+'|grade:'+g);if(f&&f.ok)S.push('In '+groupLabel('grade:'+g).toLowerCase().replace('grade','grade')+', '+absS(f,'students')+'.');else if(f)S.push('The '+groupLabel('grade:'+g)+' number is hidden because too few students were counted.');}
+  if(g&&g!=='all'){var f=fig('A|'+y+'|'+u+'|grade:'+g);if(f&&f.ok)S.push('In '+groupLabel('grade:'+g).toLowerCase().replace('grade','grade')+', '+absS(f,'students')+'.');else if(f)S.push('The '+groupLabel('grade:'+g)+' result is not reportable from the prepared source.');}
   var ok=fs.filter(function(f){return f.ok}).sort(function(a,b){return b.p-a.p});
   if(ok.length>1){remember(ok[0]);S.push('The highest rate was in '+groupLabel(ok[0].g)+' ('+ok[0].v+').');}
   S.push('The data describe attendance patterns, not the reasons for absences.');
@@ -951,7 +964,7 @@ function rankAnswer(qn,places,ys,topic){
     :(order==='highest'?'the largest share of students who were chronically absent (missed 10% or more of enrolled days)':'the smallest share of students who were chronically absent (missed 10% or more of enrolled days)');
   var S=['These are the '+r.rows.length+' schools '+scope+' with '+phrase+' in '+y+'.'];
   if(r.tie_note)S.push('There is a tie at the end of the list, so '+r.rows.length+' schools are shown.');
-  if(r.schools_hidden_for_privacy)S.push(r.schools_hidden_for_privacy+' schools are not included because too few students were counted.');
+  if(r.schools_hidden_for_privacy)S.push(r.schools_hidden_for_privacy+' schools do not have reportable figures in the prepared source.');
   S.push('Many of these rates come from fewer than 50 students, so a few kids can move a school up or down this list. Use it as a starting point for conversation, not a verdict on any school.');
   if(ms==='absence_all_grades')S.push('All-grades attendance is not directly comparable with third grade reading.');
   return {type:'answer',card:{title:ms==='reading_grade3'?'Grade 3 reading':ms==='absence_grade3'?'Grade 3 chronic absence':'Chronic absence, all grades',subtitle:(dist?unitName(dist):'All Brown County public schools')+', '+y,
@@ -1080,9 +1093,9 @@ function interpretConcern(q,places,topic){
  var hasSchool=id&&U[id]&&U[id].t==='school',hasDistrict=id&&U[id]&&U[id].t==='district';
  var a=k3(id||'county',LATEST),r=fig('R|'+LATEST+'|'+(id||'county')+'|all');
  var variants=[
-  'I can understand the frustration. Schools and teachers cannot do this work alone. Reading and attendance are shaped by experiences that begin long before a child enters a classroom, and supporting children takes families, schools, and the wider community working together.',
-  'It makes sense to be concerned when you see these results. But placing blame on one school, its teachers, or families will not explain the numbers. Schools cannot address every challenge alone; community partners have an important role, too.',
-  'These results deserve attention, and I hear the concern behind your question. A school cannot solve every barrier by itself. The more useful question is what schools, families, and community organizations can learn and do together.'
+  'A reading or attendance result can raise important questions, but it does not tell the whole story of a school. Educators work with children who bring different strengths, experiences, and needs into the classroom every day. Schools are an essential part of the solution, but they cannot do this alone. Children also need access to healthcare, books, stable housing, transportation, food, and caring adults across the community. Rather than looking for someone to blame, we can use the numbers to ask what support would make a meaningful difference.',
+  'These numbers matter because every child matters. They do not capture the time teachers spend helping children learn, the relationships schools build with families, or the challenges children may face outside school. Strong reading and regular attendance depend on many people working together: schools, families, libraries, early childhood programs, healthcare providers, and community partners. The next question is not who failed, but what barriers we can understand and address together.',
+  'A lower reading result or higher absenteeism rate is a reason to look more closely, not a verdict on students or educators. Schools work to support learning and attendance, while many factors that shape those outcomes extend beyond the school day. When we bring educators, families, and community organizations into the conversation, the data can help us focus resources, listen to local experiences, and learn what is already working.'
  ];
  var ix=(window.__concernTurn||0)%variants.length;window.__concernTurn=(window.__concernTurn||0)+1;
  var lines=[variants[ix]];
@@ -1119,16 +1132,40 @@ function conversationFirst(qn,places,ys,topic){
 }
 
 var ctx={places:[],years:[LATEST],topic:'both',pending:null,pendingUnits:[],yearQ:null,askPlace:null,lastBuilding:null};
+function smallTalk(qn){
+ var follow=['What changed in Brown County third-grade reading over two years?','How has K–3 chronic absenteeism changed?','Show reading by school district in 2024–25'];
+ var say=function(t){return {type:'text',say:[t],followups:follow};};
+ if(/^( hi| hello| hey| hey there| good morning| good afternoon| good evening| howdy| yo )$/.test(qn))return say('Hi there! Welcome to forWORDS Data Chat. I can help explore third-grade reading and K–3 attendance across Brown County’s eight public school districts. What would you like to discover?');
+ if(/ how are you| how is it going| hows it going| how are things/.test(qn)&&!/ attendance|reading|school|district/.test(qn))return say('Doing well and ready for some data questions! How are you? We can start with a school, a district, or a question about reading and attendance.');
+ if(/ (what is your name|whats your name|who are you|what should i call you|do you have a name) /.test(qn))return say('You can call me forWORDS Data Chat—or Data Buddy if you prefer! I’m a beta data assistant, not a person, and I use prepared public school data rather than student records.');
+ if(/ (what is my name|do you know my name|remember my name|can i give you my name|can i tell you my name|ask me my name) /.test(qn))return say('You do not need to share your name to explore the data. You do not need to share personal information to use this tool. Please do not enter names or details about individual students. This page does not offer a saved chat history; hosting and browser settings may have their own logs.');
+ if(/ (can you remember|will you remember|save this conversation|send me this chat|email me|email someone|contact achieve|talk to a person|talk to someone|human support|speak to staff|who do i contact|can you send) /.test(qn))return say('I cannot send emails or contact someone at Achieve Brown County on your behalf, and this page does not offer a saved chat history. For follow-up or questions beyond this beta, please contact the Achieve Brown County team through its official website. You can also take a note of the question you want to ask. Please do not enter personal student information here.');
+ if(/ (are you (real|human|alive|a robot|ai)|do you have feelings|are you smarter|do you sleep|are you tired) /.test(qn))return say('I’m a data chatbot, not a person. I do not need coffee breaks—but I do need good questions and careful data checks!');
+ if(/ (tell me a joke|make me laugh|say something funny|something silly|funny joke|knock knock) /.test(qn))return say('Why did the data point bring a ladder? It wanted to reach a higher level! Jokes aside, I can help you explore what the numbers actually show.');
+ if(/ (can you dance|do a dance|sing a song|rap for me|write a poem|can you fly|are you a potato|favorite pizza|favorite food|favorite color|do you like pizza) /.test(qn))return say('My dance moves are mostly bar charts, and my favorite kind of pie is a pie chart. Want to try a real data question?');
+ if(/ (can you predict the future|will my child be successful|tell me my future|read my mind|what am i thinking) /.test(qn))return say('I cannot predict the future or an individual child’s path. These results describe groups of students, not what any one child can achieve. A child’s growth depends on many experiences and supports.');
+ if(/ (you are wrong|thats wrong|that is wrong|this is wrong|your answer is wrong|this makes no sense|you made a mistake|not correct|bug|broken) /.test(qn))return {type:'text',say:['Thanks for pointing that out. This is a beta, and AI can make mistakes. Please check the year, grade, school or district, and source before using a figure.','If the result still looks wrong, please share the question and what seemed incorrect with the Achieve Brown County team through its official website. Do not include student-identifying details.'],followups:['What data sources does this chatbot use?','Show Brown County third-grade reading in 2024–25','Show Brown County K–3 chronic absenteeism in 2024–25']};
+ return null;
+}
 function answer(text){
   var qn=norm(text);
+  var friendly=smallTalk(qn);if(friendly)return friendly;
   if(ctx.pending){var fp0=findPlaces(qn);if(fp0.places.length===1&&!fp0.amb&&ctx.pendingUnits.indexOf(fp0.places[0])>=0){qn=norm(ctx.pending.replace(ctx.pendingAlias,' ')+' '+text);}ctx.pending=null;ctx.pendingUnits=[];}
   if(ctx.yearQ){var yq=ctx.yearQ;ctx.yearQ=null;var yr=findYears(qn);if(yr&&!findPlaces(qn).places.length){qn=norm(yq+' '+(yr.length>1?'both years':yr[0]));}}
   var fp=findPlaces(qn);
   if(fp.amb) {ctx.pending=norm(text);ctx.pendingUnits=fp.amb;ctx.pendingAlias=fp.ambAlias||'';return {type:'clarify',say:'Which one do you mean?',options:fp.amb.map(placeText)};}
   var places=fp.places, ys=findYears(qn), topic=findTopic(qn), grp=findGroup(qn), grade=findGrade(qn);
+  if(grp && / read|reading|ela|forward|literacy|score/.test(qn) && !/ attend|absen|chronic/.test(qn))topic='read';
   if(ctx.yearQ&&/ (which|what|how|rank|is chronic|my child|my district) /.test(qn)&&!/^( 2023| 2024| both years)/.test(qn))ctx.yearQ=null;
   if(ctx.askPlace&&places.length===1){var follow=ctx.askPlace;ctx.askPlace=null;var reqTopic=findTopic(follow);return placeK3Answer(places[0],/ (change|improv|trend|last two years) /.test(follow)?YEARS.slice():[LATEST],reqTopic);}
-  if(!places.length&&ctx.places.length&&/ (what|how) about | and | also | same | there | that school | this school | it | has it | is it /.test(qn)&&!/ compare.*districts /.test(qn)){places=ctx.places;if(topic==='both')topic=ctx.topic;}
+  if(!places.length&&ctx.places.length&&/ (what|how) about | and | also | same | there | that school | this school | it | has it | is it /.test(qn)&&!/ compare.*districts /.test(qn)){places=ctx.places;if(topic==='both'&&!/ reading| read| ela | forward| attendance| absent| chronic/.test(qn))topic=ctx.topic;}
+  // Questions requiring causal, predictive or funding judgments must not turn into rankings.
+  if(/ (caus|cause|caused|prove|because of|lead to|responsible for|correlat|linked to) /.test(qn) && / (read|literacy|score|absen|attend|school) /.test(qn)){
+    return {type:'text',say:['The prepared data can show whether reading and chronic absenteeism changed, but they cannot establish that one caused the other. These are aggregate results for different student groups and school years, not a study following the same children.','Educators and families work hard to support children. Understanding what helps means listening to them and looking at barriers, resources, and practices alongside the numbers.'],followups:['Show Brown County reading and K–3 attendance changes over two years','Show reading and attendance by school district','What additional information would help explain these patterns?']};
+  }
+  if(/ (where should|which school|which district|who should|where to) .* (fund|invest|allocate|send resources|receive resources|give money) | (funding|investment|resource allocation) .* (school|district|where) /.test(qn)){
+    return {type:'text',say:['Reading and attendance results can help identify where to ask more questions, but they do not tell us which school is working hardest or which investment would be most effective. Schools are doing important work, and supporting children takes families, educators, libraries, healthcare providers, and community partners working together.','A responsible next step is to review the patterns, then ask educators and families what is already working, what barriers remain, and which supports would make a practical difference. The data alone cannot make a funding decision.'],followups:['Show two-year reading changes by school district','Show two-year K–3 absenteeism changes by district','Show reading and attendance by school building in Green Bay Area Public']};
+  }
   if(intentOpinion(qn))ctx.yearQ=null;
   if(/ brown county k 3 attendance overview /.test(qn))return profile(['county'],[LATEST],'abs','');
   // Sorting follow-ups use the last building breakdown unless a new scope is named.
@@ -1156,11 +1193,22 @@ function answer(text){
     return {type:'clarify',say:'Would you like all Brown County school buildings or buildings in a particular district? Please type Brown County or the district name or abbreviation.',options:[]};
   }
   // A concern about a school or district should never be treated automatically as an attendance question.
-  if(/ (why|bad|poor|low|worst|failing|fail|wrong|blame|fault|terrible|awful|struggl|behind) /.test(qn)){
+  if(!grp && / (why|bad|poor|low|worst|failing|fail|wrong|blame|fault|terrible|awful|struggl|behind) /.test(qn)){
     var concern=interpretConcern(qn,places,topic);if(concern){if(places.length)ctx.places=places;return concern;}
   }
   if(/ (what can|how can|how could|ways) .* (community|partners|together|collaborat|support) /.test(qn)){
-    return {type:'text',say:['Schools cannot do this alone. Families, educators, healthcare providers, libraries, transportation partners, early childhood programs, and community organizations all have knowledge and roles to play.','The reading and attendance figures help us identify patterns to explore, but they do not show which supports already exist or why students are missing school. A useful next step is to ask families what barriers they encounter, ask schools what is working, and identify partners who can help close practical gaps.','Would you like to explore which districts or school buildings have higher K–3 absenteeism, or compare reading and attendance trends before discussing where resources may help?'],followups:['Which districts have the highest K–3 chronic absenteeism rates?','Show reading and attendance by school building in my district','What should I keep in mind before drawing conclusions?']};
+    return {type:'text',say:['Schools do important work every day, but they cannot meet every child’s needs alone. Reading begins well before kindergarten, and getting to school regularly can depend on transportation, health, housing, family schedules, and other circumstances. Families, educators, libraries, healthcare providers, early childhood programs, and community organizations each have something to contribute.','The reading and attendance figures help us identify patterns to explore, but they do not show which supports already exist or why students are missing school. A useful next step is to ask families what barriers they encounter, ask schools what is working, and identify partners who can help close practical gaps.','Would you like to explore which districts or school buildings have higher K–3 absenteeism, or compare reading and attendance trends before discussing where resources may help?'],followups:['Which districts have the highest K–3 chronic absenteeism rates?','Show reading and attendance by school building in my district','What should I keep in mind before drawing conclusions?']};
+  }
+  // Explicit disaggregated reading questions must route to subgroup figures,
+  // before the generic district profile handler can swallow them.
+  if(grp && grp!=='menu' && topic==='read'){
+    var subgroupScope=places.length?places[0]:(ctx.places.length===1?ctx.places[0]:'county');
+    ctx.places=[subgroupScope];ctx.topic='read';
+    return groupAnswer(subgroupScope,(ys&&ys.length?ys[ys.length-1]:LATEST),grp,'read');
+  }
+  // A prediction about an individual child must not be treated as a county estimate.
+  if(/ (predict|forecast|will my child|will my kid|will my son|will my daughter) /.test(qn) && / (read|reading|score|future|success|learn) /.test(qn)){
+    return {type:'text',say:['I cannot predict an individual child’s reading progress or future from county or school averages. Every child develops with different strengths and supports.','Teachers and caregivers can discuss a child’s individual learning and next steps. The public data here are only about groups of students, not personal records.'],followups:['How are third graders reading in Brown County?','What does meeting grade-level expectations mean?']};
   }
   var priority=conversationFirst(qn,places,ys,topic);if(priority){if(places.length===1&&places[0]!=='county'){ctx.places=places;ctx.topic=topic;ctx.years=ys||[LATEST];}return priority;}
 
@@ -1172,7 +1220,7 @@ function answer(text){
   if((!places.length || (places.length===1&&places[0]==='county')) &&
      / (change|changed|since last year|compare.*last year|over time|last year compared|difference.*last year) /.test(qn) &&
      !/ (third grade|third graders|3rd grade|grade 3|kindergarten|first grade|second grade|by grade|each grade|reading only|attendance only) /.test(qn) &&
-     (topic==='both' || /brown county/.test(qn))) {
+     (topic==='both' || (/brown county/.test(qn) && topic==='both'))) {
     var a0=fig('A|2023-24|county|k3'),a1=fig('A|2024-25|county|k3');
     var r0=fig('R|2023-24|county|all'),r1=fig('R|2024-25|county|all');
     [a0,a1,r0,r1].forEach(remember);
@@ -1253,7 +1301,7 @@ function answer(text){
   else if(/ highest| lowest| most | least| fewest| top | bottom| best| worst| rank| which schools| what schools| list of schools/.test(qn)&&!(places.length===1&&U[places[0]].t==='school'&&!/ schools /.test(qn))) res=rankAnswer(qn,places,ys,topic);
   else if((!places.length||places.every(function(p){return U[p].t!=='school'}))&&/ compare| comparison| vs | versus| other districts| all districts| each district| by district| across (our |the |all )?districts| districts /.test(qn)) res=districtAnswer(qn,ys,topic);
   else if(grp){
-    var gp=places.length?places[0]:(ctx.places[0]||'county');
+    var gp=places.length?places[0]:(/ (county|brown county|all districts|across districts) /.test(qn)?'county':(ctx.places[0]||'county'));
     if(grp==='menu') res={type:'clarify',say:'Which groups would you like to see for '+shortName(gp)+'?',options:['By race and ethnicity at '+shortName(gp),'By family income at '+shortName(gp),'English learners at '+shortName(gp),'Students with disabilities at '+shortName(gp)]};
     else res=groupAnswer(gp,ys[ys.length-1],grp,topic==='abs'?'abs':'read');
     places=[gp];
