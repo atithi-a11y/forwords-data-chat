@@ -19,7 +19,31 @@
 .tbl-wrap tbody tr:nth-child(even){background:#fcfdf9}
 .tbl-wrap tbody tr:hover{background:#f2f8eb}
 @media(max-width:680px){.welcome-panel{padding:16px;border-radius:16px}.welcome-panel h2{font-size:22px}.prompt-grid{grid-template-columns:1fr}.prompt-card{min-height:0;padding:15px}.prompt-card .prompt-question{font-size:14px}}
-.rank-scroll{max-width:100%;overflow-x:auto;border:1px solid #dce7d0;border-radius:12px;margin:14px 0;-webkit-overflow-scrolling:touch}.rank-table{border-collapse:collapse;width:100%;min-width:600px;font-size:13px}.rank-table th,.rank-table td{padding:10px 12px;text-align:left;border-bottom:1px solid #e8ede3}.rank-table th{background:#f1f7ed;color:#244c2b;position:sticky;top:0}.rank-table td:first-child{font-weight:700;color:#006b3c}</style></head><body>
+.rank-scroll{max-width:100%;overflow-x:auto;border:1px solid #dce7d0;border-radius:12px;margin:14px 0;-webkit-overflow-scrolling:touch}.rank-table{border-collapse:collapse;width:100%;min-width:600px;font-size:13px}.rank-table th,.rank-table td{padding:10px 12px;text-align:left;border-bottom:1px solid #e8ede3}.rank-table th{background:#f1f7ed;color:#244c2b;position:sticky;top:0}.rank-table td:first-child{font-weight:700;color:#006b3c}</style></head><body><style id="mobile-welcome-fix">
+/* First visit: an uncluttered invitation, then a short disclosure, then the chat. */
+.start-screen{position:fixed;inset:0;z-index:11000;background:linear-gradient(155deg,#eff7e8 0%,#ffffff 62%,#e7f3e5);display:flex;align-items:center;justify-content:center;padding:24px;padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom));overflow:auto}
+.start-inner{max-width:480px;width:100%;text-align:center;background:#fff;border:1px solid #dce8d5;border-radius:26px;padding:clamp(22px,5vw,38px);box-shadow:0 16px 48px rgba(0,74,38,.09);color:#183c2a}
+.start-mark{display:inline-flex;align-items:center;justify-content:center;background:#e7f4e1;border-radius:20px;font-size:38px;width:76px;height:76px;margin-bottom:14px}
+.start-inner h1{font-size:clamp(26px,6vw,35px);line-height:1.13;margin:8px 0 12px;color:#006738}
+.start-inner p{font-size:16px;line-height:1.55;color:#385647;margin:0 0 22px}
+.start-button{display:block;width:100%;border:0;border-radius:14px;background:#006738;color:#fff;font:700 17px -apple-system,BlinkMacSystemFont,sans-serif;padding:17px 20px;min-height:54px;cursor:pointer}
+.start-button:focus-visible{outline:3px solid #93c954;outline-offset:3px}
+.start-caption{font-size:12px;color:#5b7063;margin-top:14px;line-height:1.4}
+@media(max-width:680px){
+  .start-screen{padding:15px}
+  .start-inner{padding:24px 20px}
+  .composer{position:relative!important;bottom:auto!important;padding:8px 12px calc(8px + env(safe-area-inset-bottom))!important}
+  .composer .priv{display:none!important}
+  .composer .box{min-height:52px}
+  .composer textarea{font-size:16px!important;max-height:110px}
+  .welcome-panel{box-shadow:none;padding:16px}
+  .prompt-card{padding:13px!important;gap:7px!important}
+  .prompt-card .prompt-question{font-size:14px!important;line-height:1.4!important}
+  .prompt-card .prompt-icon{width:30px;height:30px;font-size:17px}
+  .welcome-panel .intro{font-size:14px}
+  .privacy-banner{font-size:11px!important;line-height:1.35!important;padding:8px 12px!important}
+}
+</style>
 <title>forWORDS Data Chat</title>
 <style>
 /* Layout: brand sidebar + one centered chat column with a sticky composer. Single light look, committed to the forWORDS brand. */
@@ -173,6 +197,11 @@ td.rowlbl{font-weight:600;min-width:160px}
 </style>
 <style>
 /* Before-you-start popup */
+html.dialog-open,body.dialog-open{overflow:hidden!important;overscroll-behavior:none}
+.gate[hidden],.start-screen[hidden]{display:none!important}
+.gate{overscroll-behavior:contain}
+.gate-box{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+@media(max-width:600px){.gate{align-items:center;padding:12px}.gate-box{padding:20px 18px;max-height:calc(100dvh - 24px)}}
 .gate{position:fixed;inset:0;z-index:10000;background:rgba(35,31,32,.62);display:flex;align-items:center;justify-content:center;padding:16px}
 .gate-box{background:var(--surface);color:var(--ink);max-width:540px;width:100%;max-height:92vh;overflow-y:auto;border-radius:16px;border-top:6px solid var(--mid);padding:26px 28px 24px;box-shadow:0 18px 48px rgba(0,0,0,.3)}
 .gate-box h2{margin:0 0 6px;font-size:22px;font-weight:800;color:var(--green)}
@@ -183,9 +212,19 @@ td.rowlbl{font-weight:600;min-width:160px}
 .gate-btn{width:100%;background:var(--green);color:#fff;border:0;border-radius:10px;padding:13px 20px;font-size:16px;font-weight:700}
 .gate-btn:hover{background:var(--green-dk)}
 </style>
+<div class="start-screen" id="start-screen" role="dialog" aria-modal="true" aria-labelledby="start-title">
+  <div class="start-inner">
+    <div class="start-mark" aria-hidden="true">💬</div>
+    <div style="font-size:12px;font-weight:800;letter-spacing:1.2px;color:#006738">forWORDS · EARLY LITERACY</div>
+    <h1 id="start-title">Curious about the data?</h1>
+    <p>Welcome to forWORDS Data Chat! Ask questions about third-grade reading and K–3 attendance in Brown County. Explore the numbers, notice patterns, and discover what else we can learn together.</p>
+    <button class="start-button" id="start-button" type="button">Let's explore the data →</button>
+    <div class="start-caption">A guided beta using public, aggregated Wisconsin DPI data. No student information needed.</div>
+  </div>
+</div>
 <div aria-describedby="gate-lead" aria-labelledby="gate-title" aria-modal="true" class="gate" id="gate" role="dialog">
 <div class="gate-box">
-<h2 id="gate-title">Before you start</h2>
+<h2 id="gate-title">A quick note before we chat</h2>
 <p class="gate-lead" id="gate-lead">Please keep these points in mind when you use this chat.</p>
 <ul class="gate-list">
 <li><strong>What this chat covers</strong>K–3 chronic absenteeism and public-school third-grade reading only.</li>
@@ -194,7 +233,7 @@ td.rowlbl{font-weight:600;min-width:160px}
 <li><strong>AI can be wrong</strong>Answers may contain mistakes. Please double-check important figures in WISEdash.</li>
 <li><strong>Your questions are not stored by this page</strong>This version runs in your browser. Achieve Brown County does not receive questions through this page. Your chat disappears when you reload or close the tab. Do not enter personal information.</li>
 </ul>
-<button class="gate-btn" id="gate-agree" type="button">I understand and want to continue</button>
+<button class="gate-btn" id="gate-agree" type="button">Got it — start chatting →</button>
 </div>
 </div>
 <div class="app">
@@ -1066,12 +1105,37 @@ welcome();
 <script>
 (function(){
   var gate=document.getElementById('gate'), btn=document.getElementById('gate-agree'), app=document.querySelector('.app');
-  var KEY='forwordsGateAgreed';
-  function agreed(){return false}
-  function open(){gate.hidden=false;if(app)app.setAttribute('inert','');btn.focus()}
-  function close(){gate.hidden=true;if(app)app.removeAttribute('inert');var a=document.getElementById('ask');if(a)a.focus()}
+  var start=document.getElementById('start-screen');
+  var startBtn=document.getElementById('start-button');
+  function safeFocus(node){if(!node)return;try{node.focus({preventScroll:true})}catch(e){node.focus()}}
+  function lock(){document.documentElement.classList.add('dialog-open');document.body.classList.add('dialog-open')}
+  function unlock(){document.documentElement.classList.remove('dialog-open');document.body.classList.remove('dialog-open')}
+  function open(){
+    window.scrollTo(0,0);
+    gate.hidden=false;
+    if(app)app.setAttribute('inert','');
+    lock();
+    var inner=gate.querySelector('.gate-box');if(inner)inner.scrollTop=0;
+    safeFocus(btn);
+    window.scrollTo(0,0);
+  }
+  function close(){
+    gate.hidden=true;unlock();
+    if(app)app.removeAttribute('inert');
+    var a=document.getElementById('ask');
+    if(a)a.setAttribute('placeholder','Ask a question about reading or attendance…');
+    window.scrollTo(0,0);
+    /* Do not focus the chat field: that opens the iOS keyboard immediately. */
+  }
   btn.addEventListener('click',close);
-  if(agreed()){gate.hidden=true}else{open()}
+  gate.hidden=true;
+  if(app)app.setAttribute('inert','');
+  lock();
+  startBtn.addEventListener('click',function(){
+    start.hidden=true;
+    open();
+  });
+  safeFocus(startBtn);
 })();
 </script>
 </body></html>
